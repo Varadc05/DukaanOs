@@ -1,0 +1,28 @@
+name: dukaanos
+description: AI-powered billing and inventory for kirana stores.
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  supabase_flutter: ^2.8.0
+  sqflite: ^2.4.0
+  path: ^1.9.0
+  http: ^1.2.0
+  uuid: ^4.5.0
+  provider: ^6.1.2
+  mobile_scanner: ^6.0.0 # on-device ML Kit barcode scanning, works offline
+  speech_to_text: ^7.0.0 # Android on-device recogniser: free, no API key
+  connectivity_plus: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

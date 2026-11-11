@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+*.log
+# Flutter
+mobile/android/
+mobile/ios/
+mobile/build/
+mobile/.dart_tool/
+mobile/.flutter-plugins*
+mobile/pubspec.lock
