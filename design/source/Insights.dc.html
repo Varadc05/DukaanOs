@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stock tips</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Mukta:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font-family:inherit;cursor:pointer}
+a{text-decoration:none}
+button:focus-visible,a:focus-visible{outline:3px solid #0F5B3E;outline-offset:2px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#FBF6EC;display:flex;flex-direction:column;font-family:'Mukta',sans-serif;color:#1F2A24;overflow:hidden">
+
+  <div style="padding:18px 20px 6px">
+    <div style="font-family:'Baloo 2',sans-serif;font-weight:700;font-size:26px;line-height:1.1;color:#0F5B3E">Stock tips</div>
+    <div style="font-size:13px;color:#5C655F;margin-top:2px">Based on 12 days of sales. Tips get sharper as you bill more.</div>
+  </div>
+
+  <div style="flex:1;min-height:0;padding:8px 20px 0;display:flex;flex-direction:column;gap:12px">
+
+    <div style="background:#FFFFFF;border:1.5px solid #E6DCC8;border-radius:18px;padding:14px 16px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between">
+        <div style="font-size:17px;font-weight:700">Order today</div>
+        <button style="min-height:44px;padding:0 4px;border:none;background:transparent;color:#0F5B3E;font-size:14px;font-weight:700">Budget ₹5,000</button>
+      </div>
+      <div style="height:8px;border-radius:999px;background:#EFE7D5;overflow:hidden;margin-top:-2px">
+        <div style="width:26%;height:100%;background:#0F5B3E;border-radius:999px"></div>
+      </div>
+      <div style="font-size:13px;color:#5C655F;margin:6px 0 4px">₹1,280 planned, ₹3,720 left</div>
+
+      <div style="border-top:1px solid #EFE7D5;padding:10px 0">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div style="font-size:15px;font-weight:700">Sunflower Oil 1L</div>
+          <div style="font-size:15px;font-weight:700">₹1,120</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin:3px 0">
+          <span style="background:#E4F0E8;color:#0F5B3E;font-size:13px;font-weight:700;padding:2px 10px;border-radius:999px">Order 8</span>
+          <span style="background:#F8E1DB;color:#B3331D;font-size:13px;font-weight:700;padding:2px 10px;border-radius:999px">2 days left</span>
+        </div>
+        <div style="font-size:13px;color:#5C655F;line-height:1.35">You have 4 and sell about 2 a day. 8 more lasts 5 days after delivery.</div>
+      </div>
+
+      <div style="border-top:1px solid #EFE7D5;padding:10px 0 2px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div style="font-size:15px;font-weight:700">Sugar</div>
+          <div style="font-size:15px;font-weight:700">₹160</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin:3px 0">
+          <span style="background:#E4F0E8;color:#0F5B3E;font-size:13px;font-weight:700;padding:2px 10px;border-radius:999px">Order 4 kg</span>
+          <span style="background:#F8E1DB;color:#B3331D;font-size:13px;font-weight:700;padding:2px 10px;border-radius:999px">2 days left</span>
+        </div>
+        <div style="font-size:13px;color:#5C655F;line-height:1.35">You have 2 kg and sell about 1 kg a day. 4 kg more lasts 5 days.</div>
+      </div>
+    </div>
+
+    <div style="background:#FFFFFF;border:1.5px solid #E6DCC8;border-radius:18px;padding:14px 16px 6px">
+      <div style="font-size:17px;font-weight:700;margin-bottom:6px">Expiring soon</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #EFE7D5;min-height:52px">
+        <div>
+          <div style="font-size:15px;font-weight:600">Curd</div>
+          <div style="font-size:13px;color:#5C655F">1 kg left</div>
+        </div>
+        <span style="background:#B3331D;color:#FFFFFF;font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px">Expired 2 days ago</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #EFE7D5;min-height:52px">
+        <div>
+          <div style="font-size:15px;font-weight:600">Milk</div>
+          <div style="font-size:13px;color:#5C655F">3 kg left</div>
+        </div>
+        <span style="background:#FBEBC4;color:#7A5200;font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px">3 days left</span>
+      </div>
+    </div>
+
+    <div style="background:#FFFFFF;border:1.5px solid #E6DCC8;border-radius:18px;padding:14px 16px 6px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">
+        <div style="font-size:17px;font-weight:700">Cash stuck in slow stock</div>
+        <div style="font-family:'Baloo 2',sans-serif;font-size:22px;font-weight:700;color:#B3331D">₹800</div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #EFE7D5;min-height:52px">
+        <div>
+          <div style="font-size:15px;font-weight:600">Stale Rusk</div>
+          <div style="font-size:13px;color:#5C655F">Never sold, 132 days on shelf</div>
+        </div>
+        <div style="font-size:15px;font-weight:700">₹500</div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #EFE7D5;min-height:52px">
+        <div>
+          <div style="font-size:15px;font-weight:600">Old Tea</div>
+          <div style="font-size:13px;color:#5C655F">No sale in 82 days</div>
+        </div>
+        <div style="font-size:15px;font-weight:700">₹300</div>
+      </div>
+    </div>
+  </div>
+
+  <nav style="display:flex;height:64px;background:#FFFFFF;border-top:1px solid #E6DCC8" aria-label="Main">
+    <a href="Main.dc.html" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#5C655F;font-size:12px;font-weight:600">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/></svg>Bill
+    </a>
+    <a href="Sales.dc.html" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#5C655F;font-size:12px;font-weight:600">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>Sales
+    </a>
+    <a href="Insights.dc.html" aria-current="page" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#0F5B3E;font-size:12px;font-weight:700">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5zM3 8l9 5 9-5M12 13v8"/></svg>Stock
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

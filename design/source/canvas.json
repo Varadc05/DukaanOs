@@ -1,0 +1,18 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-11T05:52:00Z" },
+  "title": "DukaanOS App Design",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 390, "h": 844, "title": "Billing", "is_interactive": true },
+    "Voice.dc.html": { "x": 470, "y": 0, "w": 390, "h": 844, "title": "Voice billing", "is_interactive": true },
+    "Insights.dc.html": { "x": 940, "y": 0, "w": 390, "h": 844, "title": "Stock tips", "is_interactive": true },
+    "Sales.dc.html": { "x": 1410, "y": 0, "w": 390, "h": 844, "title": "Sales", "is_interactive": true }
+  },
+  "order": ["Main.dc.html", "Voice.dc.html", "Insights.dc.html", "Sales.dc.html"],
+  "notes": {
+    "t1": { "x": 0, "y": -260, "text": "DukaanOS: core screens", "kind": "title1", "maxW": 1800 }
+  },
+  "designSystems": []
+}
