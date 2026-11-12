@@ -164,8 +164,12 @@ class _BillingScreenState extends State<BillingScreen> {
           IconButton(
             icon: const Icon(Icons.inventory_2_outlined),
             tooltip: 'Products and stock',
-            onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => ProductsScreen(storeId: widget.storeId))),
+            // Prices and products may have changed, so refresh the offline catalogue on return.
+            onPressed: () async {
+              await Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => ProductsScreen(storeId: widget.storeId)));
+              if (mounted) await _bootstrap();
+            },
           ),
           IconButton(
             icon: const Icon(Icons.account_balance_wallet_outlined),

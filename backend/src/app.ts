@@ -34,6 +34,9 @@ const voiceSchema = z.object({
 export function createApp(deps: AppDeps) {
   const app = express();
   app.disable('x-powered-by');
+  // Behind a hosting proxy (Render, Railway, Fly) every request arrives from the proxy's address.
+  // Without this the per-IP rate limit would throttle all users together.
+  if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1);
   app.use(helmet());
   app.use(express.json({ limit: '100kb' }));
   app.use(rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: true, legacyHeaders: false }));
@@ -72,7 +75,7 @@ export function createApp(deps: AppDeps) {
   // Create a bill. Idempotent on body.id, so offline retries are safe.
   app.post('/v1/bills', auth, async (req, res, next) => {
     try {
-      const result = await checkout(deps.repo, (req as AuthedRequest).userId, req.body);
+      const result = await checkout(deps.repo, (req as AuthedRequest).userId, req.body, istToday(deps.now?.()), deps.now?.() ?? new Date());
       res.status(result.duplicate ? 200 : 201).json(result);
     } catch (e) {
       next(e);
@@ -295,6 +298,17 @@ export function createApp(deps: AppDeps) {
       res.status(err.status).json({ error: err.code, message: err.message });
     } else if (err instanceof ZodError) {
       res.status(400).json({ error: 'bad_request', issues: err.issues });
+    } else if (
+      typeof err === 'object' && err !== null && 'status' in err &&
+      typeof (err as { status: unknown }).status === 'number' &&
+      (err as { status: number }).status >= 400 && (err as { status: number }).status < 500
+    ) {
+      // Errors raised by the JSON body parser: malformed JSON (400), body too large (413).
+      const status = (err as { status: number }).status;
+      res.status(status).json({
+        error: status === 413 ? 'payload_too_large' : 'bad_request',
+        message: status === 413 ? 'Request is too large' : 'Request could not be read',
+      });
     } else {
       console.error(err);
       res.status(500).json({ error: 'internal', message: 'Something went wrong' });

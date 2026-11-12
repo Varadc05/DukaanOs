@@ -37,7 +37,7 @@ export const patchProductSchema = z
   .object({
     name: productFields.name,
     barcode: productFields.barcode,
-    unit: productFields.unit,
+    // No `unit` here on purpose: changing kg to g would silently multiply every stock figure by 1000.
     pack_size_milli: productFields.pack_size_milli,
     gst_rate: productFields.gst_rate,
     mrp_paise: productFields.mrp_paise,
@@ -105,11 +105,17 @@ export async function updateProduct(repo: Repo, storeId: string, userId: string,
   const patch: ProductPatch = {};
   if (b.name !== undefined) patch.name = b.name;
   if (b.barcode !== undefined) patch.barcode = b.barcode;
-  if (b.unit !== undefined) patch.unit = b.unit;
   if (b.pack_size_milli !== undefined) patch.packSizeMilli = b.pack_size_milli;
   if (b.gst_rate !== undefined) patch.gstRate = b.gst_rate;
   if (b.mrp_paise !== undefined) patch.mrpPaise = b.mrp_paise;
   if (b.sell_paise !== undefined) patch.sellPaise = b.sell_paise;
+  if (b.active === false) {
+    // Archived products drop out of the stock value, so cash would silently vanish from the books.
+    const row = (await repo.getInventory(storeId)).find((r) => r.productId === productId);
+    if (row && row.qtyMilli !== 0) {
+      throw new HttpError(409, 'has_stock', 'Count the stock down to zero before archiving this product');
+    }
+  }
   if (b.active !== undefined) patch.active = b.active;
   if (b.aliases !== undefined) patch.aliases = cleanAliases(b.aliases);
   if (!(await repo.updateProduct(storeId, productId, patch))) {

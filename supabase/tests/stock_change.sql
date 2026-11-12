@@ -87,3 +87,51 @@ exception when insufficient_privilege then null; end $$;
 reset role;
 
 \echo STOCK CHANGE SQL TESTS PASSED
+
+-- ---------- 0005: review fixes ----------
+do $$
+declare
+  s1 uuid := '11111111-0000-4000-8000-000000000001';
+  cashier1 uuid := 'b0000000-0000-4000-8000-000000000002';
+  owner1 uuid := 'a0000000-0000-4000-8000-000000000001';
+  sugar uuid := 'aaaa0001-0000-4000-8000-000000000001';
+  rice2 uuid := 'aaaa0002-0000-4000-8000-000000000002';
+begin
+  -- offline bill: rung up 2 days ago, synced now -> counted on the day it happened
+  insert into bills (id, store_id, cashier_id, subtotal_paise, discount_paise, tax_paise, total_paise, payment_mode, device_time, server_time)
+  values ('f1000000-0000-4000-8000-000000000001', s1, owner1, 100, 0, 0, 100, 'cash', now() - interval '2 days', now());
+  assert exists (select 1 from daily_bill_totals where store_id = s1
+                 and day = ((now() - interval '2 days') at time zone 'Asia/Kolkata')::date), 'offline bill counted on its own day';
+
+  -- wrong phone clock (a year ago) -> falls back to the server day
+  insert into bills (id, store_id, cashier_id, subtotal_paise, discount_paise, tax_paise, total_paise, payment_mode, device_time, server_time)
+  values ('f1000000-0000-4000-8000-000000000002', s1, owner1, 100, 0, 0, 100, 'cash', now() - interval '400 days', now());
+  assert not exists (select 1 from daily_bill_totals where store_id = s1
+                 and day = ((now() - interval '400 days') at time zone 'Asia/Kolkata')::date), 'bad clock not trusted';
+end $$;
+
+-- a cashier cannot add nicknames at all
+set role authenticated;
+select set_config('request.jwt.claim.sub', 'b0000000-0000-4000-8000-000000000002', false);
+do $$ begin
+  insert into product_aliases (store_id, product_id, alias)
+  values ('11111111-0000-4000-8000-000000000001', 'aaaa0001-0000-4000-8000-000000000001', 'cashier-alias');
+  raise exception 'cashier inserted an alias';
+exception when insufficient_privilege or others then
+  if sqlerrm like 'cashier inserted%' then raise; end if;
+end $$;
+-- the owner cannot point a nickname at another store's product
+select set_config('request.jwt.claim.sub', 'a0000000-0000-4000-8000-000000000001', false);
+do $$ begin
+  insert into product_aliases (store_id, product_id, alias)
+  values ('11111111-0000-4000-8000-000000000001', 'aaaa0002-0000-4000-8000-000000000002', 'sneaky');
+  raise exception 'cross-store alias allowed';
+exception when others then
+  if sqlerrm like 'cross-store%' then raise; end if;
+end $$;
+-- but can for their own
+insert into product_aliases (store_id, product_id, alias)
+values ('11111111-0000-4000-8000-000000000001', 'aaaa0001-0000-4000-8000-000000000001', 'owner-alias');
+reset role;
+
+\echo REVIEW FIX SQL TESTS PASSED

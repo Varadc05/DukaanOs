@@ -37,6 +37,25 @@ Totals: 48 backend tests passing, TypeScript typecheck clean, SQL behaviour test
 - ✅ Cash-in-stock summary (`GET /v1/stores/:id/working-capital`): expired, expiring soon, not selling, slow, selling well. Each rupee lands in exactly one bucket, so they add up to the total (tested). Cash in hand is entered by the owner, never guessed.
 - 🟡 Flutter screens for all of the above (products list, product form, add stock, count stock, cash in stock) plus the green/turmeric theme. Written but not compiled.
 
+## Review fixes (branch `review-fixes`)
+- ✅ Malformed or oversized request bodies now return 400/413 instead of 500.
+- ✅ `TRUST_PROXY` setting so the rate limit works behind a hosting proxy.
+- ✅ A bill time in the future (wrong phone clock) is pulled back to now.
+- ✅ A product's unit can no longer be changed after creation (kg to g would multiply stock by 1000).
+- ✅ A product cannot be archived while it still has stock (its cash would vanish from the books).
+- ✅ Nicknames (aliases) are owner-only and must belong to a product in the same store (migration `0005_review_fixes.sql`).
+- ✅ Sales reports use the time the sale happened, not the time the phone synced (bill_effective_time()).
+- ✅ zod upgraded to v4 (fixes the npm audit high-severity memory issue).
+
+## Known risks (not fixed)
+- Prices are applied when a bill syncs, not when it was rung up. If the owner changes a price while a phone is offline, that phone's bill is priced at the new price.
+- Two phones syncing sales of the same batch at the same instant can push that batch below zero. Total stock stays correct; batch figures can be off by the overlap.
+- Credit limits are stored but not enforced; there is no khata screen or customer picker, so credit sales cannot be made from the app.
+- Bills the server rejects (4xx) are parked as "failed" with no screen to review or retry them.
+- Voice uses the phone's default language; no language picker yet.
+- The owner cannot add cashiers or create a store from the app (done in Supabase).
+- Release APKs need `INTERNET`, `CAMERA` and `RECORD_AUDIO` in the main AndroidManifest (see mobile/README.md).
+
 ## Not started
 
 - ⬜ Push notifications for low stock and expiry (the data exists; sending does not)

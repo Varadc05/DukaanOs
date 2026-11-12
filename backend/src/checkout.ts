@@ -37,6 +37,7 @@ export async function checkout(
   userId: string,
   raw: unknown,
   today: string = istToday(),
+  now: Date = new Date(),
 ) {
   const input = checkoutSchema.parse(raw);
 
@@ -107,7 +108,8 @@ export async function checkout(
     tax_paise: totals.taxPaise,
     total_paise: totals.totalPaise,
     payment_mode: input.payment_mode,
-    device_time: input.device_time,
+    // A phone with a wrong clock must not push a bill into the future.
+    device_time: Date.parse(input.device_time) > now.getTime() + 10 * 60_000 ? now.toISOString() : input.device_time,
     items: totals.lines.map((l) => ({
       product_id: l.productId,
       qty_milli: l.qtyMilli,

@@ -90,7 +90,22 @@ describe('add and edit products', () => {
     await request(api()).patch(`${base}/products/${uid()}`).set(as('owner')).send({ sell_paise: 1 }).expect(404);
   });
 
-  it('replaces aliases and can archive a product', async () => {
+  it('cannot change the unit of an existing product', async () => {
+    await request(api()).patch(`${base}/products/${SUGAR}`).set(as('owner')).send({ unit: 'g' }).expect(400);
+    expect(repo.products[0]!.unit).toBe('kg');
+  });
+
+  it('refuses to archive a product that still has stock', async () => {
+    await request(api()).post(`${base}/stock/receive`).set(as('owner'))
+      .send({ id: uid(), product_id: SUGAR, qty_milli: 2000, cost_paise: 3800 }).expect(201);
+    await request(api()).patch(`${base}/products/${SUGAR}`).set(as('owner')).send({ active: false }).expect(409)
+      .expect((r) => expect(r.body.error).toBe('has_stock'));
+    await request(api()).post(`${base}/stock/adjust`).set(as('owner'))
+      .send({ id: uid(), product_id: SUGAR, counted_milli: 0 }).expect(201);
+    await request(api()).patch(`${base}/products/${SUGAR}`).set(as('owner')).send({ active: false }).expect(200);
+  });
+
+  it('replaces aliases and can archive an empty product', async () => {
     await request(api()).patch(`${base}/products/${SUGAR}`).set(as('owner'))
       .send({ aliases: ['shakkar', 'cheeni'] }).expect(200);
     expect(repo.products[0]!.aliases).toEqual(['shakkar', 'cheeni']);

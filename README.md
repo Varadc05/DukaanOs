@@ -48,7 +48,7 @@ This is an early build. Here is exactly what works.
 | Push alerts, AI chat assistant, purchase-order screens, bill PDF, khata screens | ⬜ Planned |
 | Sarvam speech-to-text, Tamil and Marathi interface | ⬜ Planned |
 
-✅ = covered by automated tests (74 backend tests and a SQL behaviour suite run on Postgres 16). Details in [PROGRESS.md](PROGRESS.md).
+✅ = covered by automated tests (78 backend tests and a SQL behaviour suite run on Postgres 16). Details in [PROGRESS.md](PROGRESS.md).
 
 ## How it works
 

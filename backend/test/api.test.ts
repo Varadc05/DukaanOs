@@ -182,3 +182,24 @@ describe('POST /v1/voice/parse', () => {
       .send({ store_id: STORE, text: 'sugar' }).expect(403);
   });
 });
+
+describe('request hygiene', () => {
+  it('answers malformed JSON with 400 and oversized bodies with 413, not 500', async () => {
+    await request(make()).post('/v1/bills').set('authorization', 'Bearer cashier')
+      .set('content-type', 'application/json').send('{bad').expect(400);
+    await request(make()).post('/v1/bills').set('authorization', 'Bearer cashier')
+      .set('content-type', 'application/json').send(JSON.stringify({ x: 'a'.repeat(200_000) })).expect(413);
+  });
+
+  it('pulls a bill time that is in the future back to now', async () => {
+    const fixed = new Date('2026-11-09T06:00:00Z');
+    const app = createApp({ repo, authenticate: async (t) => tokens[t] ?? null, now: () => fixed });
+    await request(app).post('/v1/bills').set('authorization', 'Bearer cashier')
+      .send(bill({ device_time: '2030-01-01T00:00:00.000Z' })).expect(201);
+    expect([...repo.bills.values()][0]!.device_time).toBe(fixed.toISOString());
+    // an honest offline bill from two days ago is kept as it was
+    await request(app).post('/v1/bills').set('authorization', 'Bearer cashier')
+      .send(bill({ device_time: '2026-11-07T10:00:00.000Z' })).expect(201);
+    expect([...repo.bills.values()][1]!.device_time).toBe('2026-11-07T10:00:00.000Z');
+  });
+});
