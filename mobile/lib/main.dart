@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'core/theme.dart';
 import 'data/api.dart';
 import 'data/local_db.dart';
 import 'data/sync_service.dart';
@@ -34,7 +35,7 @@ class DukaanApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MaterialApp(
         title: 'DukaanOS',
-        theme: ThemeData(colorSchemeSeed: const Color(0xFF1B6B4A), useMaterial3: true),
+        theme: dukaanTheme(),
         home: const AuthGate(),
       );
 }

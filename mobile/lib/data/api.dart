@@ -61,6 +61,19 @@ class Api {
     return body;
   }
 
+  /// POST or PATCH JSON to our backend. Throws [ApiException] on any non-2xx answer.
+  Future<Map<String, dynamic>> sendJson(String method, String path, Map<String, dynamic> body) async {
+    final req = http.Request(method, Uri.parse('$baseUrl$path'))
+      ..headers.addAll(_headers)
+      ..body = jsonEncode(body);
+    final res = await http.Response.fromStream(await req.send().timeout(const Duration(seconds: 15)));
+    final json = _tryJson(res.body);
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      throw ApiException(res.statusCode, '${json['error'] ?? 'error'}', '${json['message'] ?? res.body}');
+    }
+    return json;
+  }
+
   Map<String, dynamic> _tryJson(String s) {
     try {
       return jsonDecode(s) as Map<String, dynamic>;

@@ -2,7 +2,8 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { BatchStock } from './fefo.js';
 import type { CatalogueProduct } from './matcher.js';
 import type { DailySale, InventoryRow } from './insights.js';
-import type { CheckoutPayload, DayTotal, Repo, Role } from './repo.js';
+import { HttpError } from './errors.js';
+import type { CheckoutPayload, DayTotal, NewProduct, ProductPatch, Repo, Role, StockChangePayload } from './repo.js';
 
 type ProductRow = {
   id: string;
@@ -11,6 +12,8 @@ type ProductRow = {
   unit: string;
   sell_paise: number;
   gst_rate: number;
+  mrp_paise?: number;
+  pack_size_milli?: number;
   active: boolean;
   product_aliases?: { alias: string }[];
 };
@@ -23,6 +26,8 @@ const toProduct = (r: ProductRow): CatalogueProduct & { active: boolean } => ({
   sellPaise: r.sell_paise,
   gstRate: r.gst_rate,
   active: r.active,
+  mrpPaise: r.mrp_paise,
+  packSizeMilli: r.pack_size_milli,
   aliases: (r.product_aliases ?? []).map((a) => a.alias),
 });
 
@@ -67,7 +72,7 @@ export class SupabaseRepo implements Repo {
   async getProducts(storeId: string, ids: string[]) {
     const { data, error } = await this.db
       .from('products')
-      .select('id,name,barcode,unit,sell_paise,gst_rate,active')
+      .select('id,name,barcode,unit,sell_paise,gst_rate,mrp_paise,pack_size_milli,active')
       .eq('store_id', storeId)
       .in('id', ids);
     if (error) throw error;
@@ -102,6 +107,82 @@ export class SupabaseRepo implements Repo {
 
   async applyCheckout(payload: CheckoutPayload) {
     const { data, error } = await this.db.rpc('checkout_bill', { p: payload });
+    if (error) throw error;
+    return data as { id: string; duplicate: boolean };
+  }
+
+  private mapUnique(error: { code?: string; message?: string } | null) {
+    if (!error) return;
+    if (error.code === '23505') {
+      const alias = (error.message ?? '').includes('alias');
+      throw new HttpError(
+        409,
+        alias ? 'duplicate_alias' : 'duplicate_barcode',
+        alias ? 'One of these names is already used for another product' : 'Another product already has this barcode',
+      );
+    }
+    throw error;
+  }
+
+  async createProduct(storeId: string, p: NewProduct) {
+    const { data, error } = await this.db
+      .from('products')
+      .insert({
+        store_id: storeId, name: p.name, barcode: p.barcode, unit: p.unit, pack_size_milli: p.packSizeMilli,
+        gst_rate: p.gstRate, mrp_paise: p.mrpPaise, sell_paise: p.sellPaise,
+      })
+      .select('id')
+      .single();
+    this.mapUnique(error);
+    const id = data!.id as string;
+    if (p.aliases.length) {
+      const { error: e2 } = await this.db
+        .from('product_aliases')
+        .insert(p.aliases.map((alias) => ({ store_id: storeId, product_id: id, alias })));
+      if (e2) {
+        // Do not leave a half-made product behind.
+        await this.db.from('products').delete().eq('store_id', storeId).eq('id', id);
+        this.mapUnique(e2);
+      }
+    }
+    return { id };
+  }
+
+  async updateProduct(storeId: string, id: string, patch: ProductPatch) {
+    const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (patch.name !== undefined) row.name = patch.name;
+    if (patch.barcode !== undefined) row.barcode = patch.barcode;
+    if (patch.unit !== undefined) row.unit = patch.unit;
+    if (patch.packSizeMilli !== undefined) row.pack_size_milli = patch.packSizeMilli;
+    if (patch.gstRate !== undefined) row.gst_rate = patch.gstRate;
+    if (patch.mrpPaise !== undefined) row.mrp_paise = patch.mrpPaise;
+    if (patch.sellPaise !== undefined) row.sell_paise = patch.sellPaise;
+    if (patch.active !== undefined) row.active = patch.active;
+    const { data, error } = await this.db
+      .from('products').update(row).eq('store_id', storeId).eq('id', id).select('id');
+    this.mapUnique(error);
+    if (!data?.length) return false;
+    if (patch.aliases !== undefined) {
+      const { data: have } = await this.db
+        .from('product_aliases').select('alias').eq('store_id', storeId).eq('product_id', id);
+      const existing = new Set((have ?? []).map((r) => r.alias as string));
+      const want = new Set(patch.aliases);
+      const add = [...want].filter((a) => !existing.has(a));
+      const drop = [...existing].filter((a) => !want.has(a));
+      if (add.length) {
+        const { error: e2 } = await this.db
+          .from('product_aliases').insert(add.map((alias) => ({ store_id: storeId, product_id: id, alias })));
+        this.mapUnique(e2);
+      }
+      if (drop.length) {
+        await this.db.from('product_aliases').delete().eq('store_id', storeId).eq('product_id', id).in('alias', drop);
+      }
+    }
+    return true;
+  }
+
+  async applyStockChange(payload: StockChangePayload) {
+    const { data, error } = await this.db.rpc('apply_stock_change', { p: payload });
     if (error) throw error;
     return data as { id: string; duplicate: boolean };
   }

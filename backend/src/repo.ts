@@ -31,6 +31,38 @@ export interface CheckoutPayload {
   movements: { product_id: string; batch_id: string | null; qty_delta_milli: number }[];
 }
 
+export interface NewProduct {
+  name: string;
+  barcode: string | null;
+  unit: string;
+  packSizeMilli: number;
+  gstRate: number;
+  mrpPaise: number;
+  sellPaise: number;
+  aliases: string[];
+}
+
+export type ProductPatch = Partial<Omit<NewProduct, 'aliases'>> & { active?: boolean; aliases?: string[] };
+
+/** One atomic stock change: optionally a new batch, plus ledger rows. `id` is the idempotency key. */
+export interface StockChangePayload {
+  id: string;
+  store_id: string;
+  user_id: string;
+  batch: {
+    product_id: string;
+    expiry_date: string | null;
+    cost_paise: number;
+    qty_received_milli: number;
+  } | null;
+  movements: {
+    product_id: string;
+    batch_id: string | null;
+    qty_delta_milli: number;
+    reason: 'purchase' | 'adjust' | 'damage' | 'expired';
+  }[];
+}
+
 /** Everything the business logic needs from storage. Swappable: Supabase in prod, memory in tests. */
 export interface Repo {
   getRole(storeId: string, userId: string): Promise<Role | null>;
@@ -42,6 +74,11 @@ export interface Repo {
   getInventory(storeId: string): Promise<InventoryRow[]>;
   getDailySales(storeId: string, sinceDay: string): Promise<DailySale[]>;
   getDayTotals(storeId: string, sinceDay: string): Promise<DayTotal[]>;
+  /** Throws HttpError 409 duplicate_barcode / duplicate_alias. */
+  createProduct(storeId: string, p: NewProduct): Promise<{ id: string }>;
+  /** Returns false when the product is not in this store. Throws 409 like createProduct. */
+  updateProduct(storeId: string, id: string, patch: ProductPatch): Promise<boolean>;
+  applyStockChange(payload: StockChangePayload): Promise<{ id: string; duplicate: boolean }>;
 }
 
 export type { Allocation };

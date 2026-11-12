@@ -18,4 +18,24 @@ void main() {
     expect(formatQty(2000, 'kg'), '2 kg');
     expect(formatQty(500, 'kg'), '0.5 kg');
   });
+  test('parses what a shopkeeper types', () {
+    expect(parseRupeesToPaise('45'), 4500);
+    expect(parseRupeesToPaise('45.5'), 4550);
+    expect(parseRupeesToPaise('₹1,250.05'), 125005);
+    expect(parseRupeesToPaise('45.555'), isNull);
+    expect(parseRupeesToPaise('-3'), isNull);
+    expect(parseRupeesToPaise(''), isNull);
+    expect(parseRupeesToPaise('abc'), isNull);
+    expect(parseQtyMilli('2'), 2000);
+    expect(parseQtyMilli('0.5'), 500);
+    expect(parseQtyMilli('1.250'), 1250);
+    expect(parseQtyMilli('1.2345'), isNull);
+    expect(parseQtyMilli('1,5'), isNull);
+  });
+  test('turns stored values back into input text', () {
+    expect(paiseToInput(4500), '45');
+    expect(paiseToInput(4550), '45.5');
+    expect(paiseToInput(4505), '45.05');
+    expect(milliToInput(2500), '2.5');
+  });
 }

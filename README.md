@@ -41,12 +41,14 @@ This is an early build. Here is exactly what works.
 | Low-stock, expiry and dead-stock detection (with cash tied up) | ✅ Built and tested |
 | 7-day demand forecast with festival lift and confidence level | ✅ Built and tested |
 | Budget-aware reorder suggestions with plain-language reasons | ✅ Built and tested |
-| Flutter app: login, offline billing, barcode, voice, sync, dashboard, insights | 🟡 Written, not yet compiled |
+| Add and edit products, receive stock, physical stock count (owner only, retry-safe) | ✅ Built and tested (API and database) |
+| Cash-in-stock breakdown: expired, expiring, not selling, slow, selling well; adds up to the total | ✅ Built and tested |
+| Flutter app: login, offline billing, barcode, voice, sync, dashboard, insights, products and stock screens, cash-in-stock screen | 🟡 Written, not yet compiled |
 | Gemini language fallback for voice phrases the rules cannot read | 🟡 Written, not yet run against the live API |
 | Push alerts, AI chat assistant, purchase-order screens, bill PDF, khata screens | ⬜ Planned |
 | Sarvam speech-to-text, Tamil and Marathi interface | ⬜ Planned |
 
-✅ = covered by automated tests (48 backend tests and a SQL behaviour suite run on Postgres 16). Details in [PROGRESS.md](PROGRESS.md).
+✅ = covered by automated tests (74 backend tests and a SQL behaviour suite run on Postgres 16). Details in [PROGRESS.md](PROGRESS.md).
 
 ## How it works
 
@@ -98,7 +100,7 @@ npm run typecheck
 
 **Backend with a real database**
 
-1. Create a free [Supabase](https://supabase.com) project. In the SQL editor run `0001_core.sql`, `0002_views.sql`, then `0003_analytics.sql` from `supabase/migrations/`.
+1. Create a free [Supabase](https://supabase.com) project. In the SQL editor run `0001_core.sql`, `0002_views.sql`, `0003_analytics.sql`, then `0004_stock_change.sql` from `supabase/migrations/`.
 2. In Authentication, create an owner and a cashier. Put their IDs into `supabase/seed.sql` and run it.
 3. `cp backend/.env.example backend/.env` and fill in `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. The service key belongs on the server only. `GEMINI_API_KEY` is optional.
 4. `npm run dev`
@@ -114,7 +116,7 @@ flutter run --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... -
 
 ## Roadmap
 
-1. Compile and polish the Flutter app; add product and stock-receiving screens.
+1. Compile and polish the Flutter app and run it end to end against a live Supabase project.
 2. Push alerts for low stock and expiry.
 3. Purchase orders with owner approval, supplier price comparison, goods received.
 4. AI store assistant in Tamil, Hindi, Marathi and English, using fixed read-only business queries.

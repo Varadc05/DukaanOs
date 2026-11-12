@@ -6,6 +6,8 @@ export interface CatalogueProduct {
   sellPaise: number;
   gstRate: number;
   aliases: string[];
+  mrpPaise?: number;
+  packSizeMilli?: number;
 }
 
 export interface Candidate {

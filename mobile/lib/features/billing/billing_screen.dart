@@ -7,8 +7,10 @@ import '../../data/api.dart';
 import '../../data/local_db.dart';
 import '../../data/models.dart';
 import '../../data/sync_service.dart';
+import '../capital/working_capital_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../insights/insights_screen.dart';
+import '../stock/products_screen.dart';
 import 'cart_model.dart';
 import 'scanner_page.dart';
 
@@ -158,6 +160,18 @@ class _BillingScreenState extends State<BillingScreen> {
             tooltip: 'Stock insights',
             onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => InsightsScreen(storeId: widget.storeId))),
+          ),
+          IconButton(
+            icon: const Icon(Icons.inventory_2_outlined),
+            tooltip: 'Products and stock',
+            onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => ProductsScreen(storeId: widget.storeId))),
+          ),
+          IconButton(
+            icon: const Icon(Icons.account_balance_wallet_outlined),
+            tooltip: 'Cash in stock',
+            onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => WorkingCapitalScreen(storeId: widget.storeId))),
           ),
           if (_pending > 0)
             Padding(padding: const EdgeInsets.all(12), child: Chip(label: Text('$_pending to sync'))),
