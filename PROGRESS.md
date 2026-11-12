@@ -32,6 +32,11 @@ Legend: ✅ built and tested here · 🟡 written, not run against the real serv
 
 Totals: 48 backend tests passing, TypeScript typecheck clean, SQL behaviour tests passing on Postgres 16.
 
+## Added on branch `inventory-features`
+- ✅ Backend + database: add/edit product (MRP ceiling, duplicate barcode/nickname checks), receive stock (new batch + ledger row, one atomic call), physical count (shortage taken first-expiry-first), all owner-only and safe to retry. Migration `0004_stock_change.sql`, SQL tests in `supabase/tests/stock_change.sql`.
+- ✅ Cash-in-stock summary (`GET /v1/stores/:id/working-capital`): expired, expiring soon, not selling, slow, selling well. Each rupee lands in exactly one bucket, so they add up to the total (tested). Cash in hand is entered by the owner, never guessed.
+- 🟡 Flutter screens for all of the above (products list, product form, add stock, count stock, cash in stock) plus the green/turmeric theme. Written but not compiled.
+
 ## Not started
 
 - ⬜ Push notifications for low stock and expiry (the data exists; sending does not)
@@ -39,7 +44,6 @@ Totals: 48 backend tests passing, TypeScript typecheck clean, SQL behaviour test
 - ⬜ Purchase order screens and approval flow in the app (database rules exist)
 - ⬜ Bill PDF and sharing
 - ⬜ Khata screens
-- ⬜ Catalogue management screens (add product, receive stock)
 - ⬜ Sarvam speech-to-text (voice uses the phone's built-in recogniser for now)
 - ⬜ Tamil and Marathi interface strings
 - ⬜ Nightly job that stores forecasts in the `forecasts` table (forecasts are computed on request instead)
@@ -54,5 +58,5 @@ Totals: 48 backend tests passing, TypeScript typecheck clean, SQL behaviour test
 
 ## Run it
 
-See `README.md`. Backend: `cd backend && npm install && npm test`. SQL tests: apply the three migrations and
+See `README.md`. Backend: `cd backend && npm install && npm test`. SQL tests: apply the four migrations and
 `supabase/tests/rls_and_checkout.sql` (with `stub_auth.sql` first if you are not on Supabase) to a scratch Postgres.

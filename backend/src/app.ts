@@ -11,6 +11,8 @@ import { matchProduct } from './matcher.js';
 import { convertQty, toMilli } from './money.js';
 import { parseVoiceText, type ParsedItem } from './parser.js';
 import type { Repo } from './repo.js';
+import { adjustStock, createProduct, receiveStock, requireOwner, updateProduct } from './stock.js';
+import { buildWorkingCapital } from './workingCapital.js';
 
 export interface AppDeps {
   repo: Repo;
@@ -182,6 +184,107 @@ export function createApp(deps: AppDeps) {
         deps.repo.getDailySales(storeId, addDays(today, -56)),
       ]);
       res.json(buildInsights(inventory, sales, { today, budgetPaise: q.budget_paise ?? null, leadDays: q.lead_days }));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  // ---------- catalogue and stock management (owner writes, any member reads) ----------
+
+  const productParam = z.object({ storeId: z.string().uuid(), productId: z.string().uuid() });
+
+  // Product list with stock on hand. No cost or margin here, so cashiers may read it.
+  app.get('/v1/stores/:storeId/products', auth, async (req, res, next) => {
+    try {
+      const { storeId } = storeParam.parse(req.params);
+      if (!(await deps.repo.getRole(storeId, (req as AuthedRequest).userId))) {
+        throw new HttpError(403, 'not_a_member', 'You do not belong to this store');
+      }
+      const [catalogue, inventory] = await Promise.all([deps.repo.listCatalogue(storeId), deps.repo.getInventory(storeId)]);
+      const qty = new Map(inventory.map((r) => [r.productId, r.qtyMilli]));
+      res.json({
+        products: catalogue
+          .map((p) => ({
+            id: p.id,
+            name: p.name,
+            barcode: p.barcode,
+            unit: p.unit,
+            pack_size_milli: p.packSizeMilli ?? 1000,
+            gst_rate: p.gstRate,
+            mrp_paise: p.mrpPaise ?? 0,
+            sell_paise: p.sellPaise,
+            aliases: p.aliases,
+            qty_milli: qty.get(p.id) ?? 0,
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      });
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  app.post('/v1/stores/:storeId/products', auth, async (req, res, next) => {
+    try {
+      const { storeId } = storeParam.parse(req.params);
+      res.status(201).json(await createProduct(deps.repo, storeId, (req as AuthedRequest).userId, req.body));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  app.patch('/v1/stores/:storeId/products/:productId', auth, async (req, res, next) => {
+    try {
+      const { storeId, productId } = productParam.parse(req.params);
+      res.json(await updateProduct(deps.repo, storeId, (req as AuthedRequest).userId, productId, req.body));
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  // Goods arrived. Idempotent on body.id.
+  app.post('/v1/stores/:storeId/stock/receive', auth, async (req, res, next) => {
+    try {
+      const { storeId } = storeParam.parse(req.params);
+      const r = await receiveStock(deps.repo, storeId, (req as AuthedRequest).userId, req.body, istToday(deps.now?.()));
+      res.status(r.duplicate ? 200 : 201).json(r);
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  // Physical count: send what is really on the shelf, the backend writes the difference.
+  app.post('/v1/stores/:storeId/stock/adjust', auth, async (req, res, next) => {
+    try {
+      const { storeId } = storeParam.parse(req.params);
+      const r = await adjustStock(deps.repo, storeId, (req as AuthedRequest).userId, req.body);
+      res.status(r.applied ? 201 : 200).json(r);
+    } catch (e) {
+      next(e);
+    }
+  });
+
+  const capitalQuery = z.object({ budget_paise: z.coerce.number().int().min(0).max(100_000_000).optional() });
+
+  // Where the shop's cash is sitting: five buckets that add up to the total stock value. Owner only.
+  app.get('/v1/stores/:storeId/working-capital', auth, async (req, res, next) => {
+    try {
+      const { storeId } = storeParam.parse(req.params);
+      await requireOwner(deps.repo, storeId, (req as AuthedRequest).userId);
+      const q = capitalQuery.parse(req.query);
+      const today = istToday(deps.now?.());
+      const [inventory, sales] = await Promise.all([
+        deps.repo.getInventory(storeId),
+        deps.repo.getDailySales(storeId, addDays(today, -56)),
+      ]);
+      const capital = buildWorkingCapital(inventory, sales, { today });
+      const needed = buildInsights(inventory, sales, { today, budgetPaise: null }).reorder.total_paise;
+      res.json({
+        ...capital,
+        reorder_needed_paise: needed,
+        // Only the owner knows the cash in hand, so we never guess it.
+        budget_paise: q.budget_paise ?? null,
+        headroom_paise: q.budget_paise === undefined ? null : q.budget_paise - needed,
+      });
     } catch (e) {
       next(e);
     }

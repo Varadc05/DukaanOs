@@ -1,7 +1,8 @@
 import type { BatchStock } from './fefo.js';
 import type { CatalogueProduct } from './matcher.js';
 import type { DailySale, InventoryRow } from './insights.js';
-import type { CheckoutPayload, DayTotal, Repo, Role } from './repo.js';
+import { HttpError } from './errors.js';
+import type { CheckoutPayload, DayTotal, NewProduct, ProductPatch, Repo, Role, StockChangePayload } from './repo.js';
 
 /** In-memory repo for tests and local demos. Mirrors the SQL checkout_bill() behaviour. */
 export class MemoryRepo implements Repo {
@@ -11,7 +12,8 @@ export class MemoryRepo implements Repo {
   sellPaiseById = new Map<string, number>();
   customers = new Set<string>();
   bills = new Map<string, CheckoutPayload>();
-  movements: { storeId: string; productId: string; batchId: string | null; delta: number; billId: string }[] = [];
+  movements: { storeId: string; productId: string; batchId: string | null; delta: number; billId: string; reason?: string }[] = [];
+  stockChanges = new Set<string>();
 
   async getRole(storeId: string, userId: string) {
     return this.roles.get(`${storeId}:${userId}`) ?? null;
@@ -50,6 +52,62 @@ export class MemoryRepo implements Repo {
       });
     }
     return { id: p.id, duplicate: false };
+  }
+
+  private checkUnique(storeId: string, selfId: string | null, barcode: string | null | undefined, aliases: string[] | undefined) {
+    if (barcode && this.products.some((x) => x.storeId === storeId && x.id !== selfId && x.barcode === barcode)) {
+      throw new HttpError(409, 'duplicate_barcode', 'Another product already has this barcode');
+    }
+    for (const a of aliases ?? []) {
+      if (this.products.some((x) => x.storeId === storeId && x.id !== selfId && x.aliases.includes(a))) {
+        throw new HttpError(409, 'duplicate_alias', `"${a}" is already used for another product`);
+      }
+    }
+  }
+
+  async createProduct(storeId: string, p: NewProduct) {
+    this.checkUnique(storeId, null, p.barcode, p.aliases);
+    const id = crypto.randomUUID();
+    this.products.push({
+      id, storeId, name: p.name, barcode: p.barcode, unit: p.unit, sellPaise: p.sellPaise,
+      gstRate: p.gstRate, aliases: p.aliases, mrpPaise: p.mrpPaise, packSizeMilli: p.packSizeMilli, active: true,
+    });
+    return { id };
+  }
+
+  async updateProduct(storeId: string, id: string, patch: ProductPatch) {
+    const p = this.products.find((x) => x.storeId === storeId && x.id === id);
+    if (!p) return false;
+    this.checkUnique(storeId, id, patch.barcode, patch.aliases);
+    if (patch.name !== undefined) p.name = patch.name;
+    if (patch.barcode !== undefined) p.barcode = patch.barcode;
+    if (patch.unit !== undefined) p.unit = patch.unit;
+    if (patch.packSizeMilli !== undefined) p.packSizeMilli = patch.packSizeMilli;
+    if (patch.gstRate !== undefined) p.gstRate = patch.gstRate;
+    if (patch.mrpPaise !== undefined) p.mrpPaise = patch.mrpPaise;
+    if (patch.sellPaise !== undefined) p.sellPaise = patch.sellPaise;
+    if (patch.active !== undefined) p.active = patch.active;
+    if (patch.aliases !== undefined) p.aliases = patch.aliases;
+    return true;
+  }
+
+  async applyStockChange(c: StockChangePayload) {
+    if (this.stockChanges.has(c.id)) return { id: c.id, duplicate: true };
+    this.stockChanges.add(c.id);
+    if (c.batch) {
+      this.batches.push({
+        batchId: c.id, storeId: c.store_id, productId: c.batch.product_id,
+        expiryDate: c.batch.expiry_date, receivedAt: new Date().toISOString(),
+        remainingMilli: 0, costPaise: c.batch.cost_paise,
+      });
+    }
+    for (const m of c.movements) {
+      this.movements.push({
+        storeId: c.store_id, productId: m.product_id, batchId: m.batch_id,
+        delta: m.qty_delta_milli, billId: c.id, reason: m.reason,
+      });
+    }
+    return { id: c.id, duplicate: false };
   }
 
   stockMilli(storeId: string, productId: string, opening = 0) {
